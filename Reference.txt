@@ -1,0 +1,21 @@
+To get the current date, you can just add:
+
+|eval timenow=now()
+
+This gets epoch time into the field timenow. If you want to format it, you can use strftime:
+
+|eval nowstring=strftime(now(), "%Y-%m-%d")
+
+If you want to convert your date to an epoch time:
+
+|eval epochdate=strptime(yourdate, "%Y-%m-%d")
+
+You can also use relative_time to find the epoch value of 30 days ago:
+
+|eval epoch30days_ago=relative_time(now(), "-30d@d" )
+
+This could be used to do a direct comparison with the strptime value from above.
+
+Finally, you can do the strptime and set it to _time. This would allow you to set the time range directly:
+
+|eval _time=strptime(yourdate, "%Y-%m-%d") |search latest=-30d
