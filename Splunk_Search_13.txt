@@ -1,0 +1,47 @@
+스플렁크는 이벤트를 명시하고 그룹화하기 위해 사용되는 eventtype이라는 필드를 제공한다. 
+필드로 동작하기 때문에 eventtype에는 값을 지정하고 이를 검색에 사용할 수 있다. 
+eventtype은 여러가지 방식으로 사용할 수 있는데 이를 알아보자. 
+
+검색을 eventtype으로 저장하기
+
+관리하는 웹로그에서 사용자의 오류인 400계열의 HTTP 상태코드를 를 자주 검색하는 보안 담당자라면 이런 검색어를 매번 복사하는 것이 비효율적인 일이다. 
+이때 자주 검색하는 이벤트의 검색어를 eventtype으로 저장하고 이름을 client_error로 지정할 수 있다.
+
+status=400 OR status=403 OR status=404
+
+OR 연산자는 조건 중 어느 하나가 참이면 모두가 참이되는 연산자이다. AND, NOT도 사용할 수 있으며 스플렁크에서는 이 세 연산자는 반드시 대문자로 입력해야 한다. 
+eventtype을  생성하는 방법은 다음과 같다.
+
+1. 찾고자 하는 검색어를 사용해서 검색을 실행한다. 
+2. 시간 지정자 위에 있는 "다른 이름으로 저장"을 클릭하고 eventtype을 선택한다.
+3. 입력창에 eventtype 이름을 지정하고 저장한다. 
+
+이후 해당 검색어는 eventtype=[eventtype 이름]으로 필등에 검색어를 지정하는 것과 동일한 방식으로 사용할 수 있다. 
+앞서 신규로 eventtype을 생성할 때는 반드시 1번은 검색을 실행시켜야 "다른이름으로 저장" 기능이 활성화된다.
+이 방식은 그다지 효율적이지는 않다. 숙련된 스플렁크 사용자는 검색 결과를 인지할 수 있기때문에 eventtype을 만들기 위해서 굳이 검색을 실행할 필요가 없다. 
+이런 경우는 eventtype을 직접 신규로 생성할 수 있다. 
+
+1. 메뉴에서 설정 -> 지식 -> Event type을 선택한다. 
+2. 오른쪽 상단에서 새 Event Type을 선택한다. 
+3. Name에는 eventtype 이름을 지정한다. 이 값이 eventtype 필드에 적용되는 값이다.
+4. 검색 문자열에 원하는 검색어를 입력한다.
+5. 태그는 선택사항이다. 태그 항목에 값을 입력한 경우 tag=[tag 이름] 검색어를 사용할 수 있다. 
+6. 색상 역시 선택사항이다. 색상을 지정하면 eventtype이 맞는 경우 검색 결광에서 색상을 다르게 보여준다.
+7. 저장을 누르면 새로운 eventtype이 생성된다. 
+
+이제 이벤트 타입을 사용하지 않을 때와 사용하는 경우의 검색어를 비교해보자. 
+
+<event type 미사용>
+index=book sourcetype="access_combined_wcookie"  status=400 OR  status=403 OR status=404
+
+<event type 사용>
+index=book sourcetype="access_combined_wcookie"  eventtype="client_error"
+
+검색에 필요한 검색어의 입력이 눈에 띄게 줄었다. 그리고 가장 좋은 것은 eventtype은 검색어 재사용이 가능하다는 것이다.
+필드와 검색어의 조합을 사용한 검색어를 eventtype으로 지정하면 동일한 검색 품질을 얻을 수 있으므로 매우 유용하다. 
+eventtype에 태그를 지정했으면 tag역시 필드처럼 사용할 수 있다. 
+
+<event type 사용>
+index=book sourcetype="access_combined_wcookie" tag="client_error"
+
+태그는 그 자체로도 사용법이 매우 많은 편이다. tag는 다음에 더 자세히 살펴보도록 한다. 

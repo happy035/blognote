@@ -1,0 +1,73 @@
+오늘은 하위 검색(Sub Search)에 대해서 알아보자.
+
+하위 검색은 검색 안에 또 따른 검색이 있는 것이다. 밖에 있는 검색을 주 검색, 안에 있는 검색을 하위 검색이라고 칭한다.
+검색에 하위검색이 있으면 하위 검색부터 실행되고 이후에 주 검색이 실행된다.  
+하위 검색은 주 검색안에서 대괄호로 묶어야 한다. 
+
+index=book sourcetype=access_combined_wcookie status=200 action=purchase 
+    [ search index=book sourcetype=access_combined_wcookie status=200 action=purchase 
+    | top limit=1 clientip 
+    | table clientip] 
+| stats count, dc(productId), values(productId) by clientip
+
+ 출처: Splunk Search 7.0.0
+
+tutorial 데이터를 업로드했다면 이 검색에서 결과를 얻을 수 있다. 본인이 데이터를 입력한 index이름을 지정하고 검색을 실행시킨다. 
+시간 범위는 전체 시간으로 검색한다. 
+
+<<< 검색결과 >>>
+
+검색 결과가 이 그림과 다르다고 상심할 필요없다. Tutorial 데이터는 매일 다른 데이터가 생성되므로 이 그림과 다르게 나오는 것이 당연하다.
+다만 아무런 결과를 얻지 못했다면 본인의 검색어가 제대로 동작하지 않으므로 문제를 찾아서 수정해야 한다.
+
+검색에서 대해서 상세하게 살펴보자. 먼저 [] 안의 하위 검색을 살펴보자. 
+
+ [ search index=book sourcetype=access_combined_wcookie status=200 action=purchase 
+    | top limit=1 clientip 
+    | table clientip]
+
+1. 주 검색안의 하위 검색은 대괄호 [ ]로 감싸야 한다. 
+2. 하위 검색은 search, tstats와 같은 명령어를 사용해서 시작해야 한다. 
+3. search 이후에 원하는 결과를 얻기 위한 검색어를 작성한다. index, sourcetype 등도 주 검색과 동일하게 작성한다. 
+   즉, 완전하게 동작하는 별개의 검색어를 작성하는 것이다. 
+4. status=200 action=purchase와 같이 검색 조건을 명시하였다. 
+5. top limit=1 clientip : 가장 많이 출현하는 clientip를 top 명령어로 추출하고 있다. 
+   그리고 limit=1으로 해서 최고로 많이 출현하는 단 하나의 clientip를 추출하였다.
+6. table clientip :  top으로 얻은 clientip를 table로 화면에 보여주었다. 
+
+이 하위 검색이 반환하는 결과는 어떤 것일까? 어떤 값인지는 알 수 없지만 우리는 검색어를 통해서 어떤 데이터인지는 알 수 있다. 
+status=200 이고 action=purchase인 이벤트에서 가장 많이 출현하는 clientip를 얻는 것이다. 
+검색어에 시간연산자가 없기 때문에 설정한 시간 내의 이벤트를 대상으로 값을 추출할 것이다. 
+이 값은 시간에 따라서 수집하는 로그에 따라서 가변적이기 때문에 이런 검색어로만 추출해야 한다. 
+만일 항상 같은 결과를 반환한다면 우리는 이렇게 힘들게 검색어를 작성할 필요가 없을 것이다. 
+
+하위 검색이 완료되었다. 이제 주 검색이 실행될 차례이다. 그런데 하위검색이 주검색 안에 위치하고 있다. 
+하위 검색은 반환한 결과 값으로 대체된다. 그리고 주 검색이 실행된다. 즉, 하위 검색의 결과는 주 검색의 검색 인자가 되는 것이다. 
+예제에서 반환한 clientip값은 87.194.216.51이다. 그렇다면 주 검색은 아래와 같은 검색어로 실행될 것이다. 
+
+index=book sourcetype=access_combined_wcookie status=200 action=purchase 87.194.216.51
+| stats count, dc(productId), values(productId) by clientip
+
+하위 검색문은 검색 결과로 대체되고 주검색이 실행된다. 하위 검색을 포함한 주 검색은 다음을 얻기 위한 검색어이다. 
+status=200이고 action=purchase인 가장 많은 clientip의 숫자와 productId의 고유 숫자 그리고 productId의 고유 목록을 얻기 위한 것이다. 
+
+하위 검색 성능 고려사항
+
+하위 검색 결과 개수가 많다면 이 검색으로 인해 성능이 저하될 수 있다.
+
+앞에서 실행시켰던 검색을 다시 살펴보자. 
+
+ [ search index=book sourcetype=access_combined_wcookie status=200 action=purchase 
+    | top limit=1 clientip 
+    | table clientip]
+
+이 검색어만 가지고는 별 문제가 없어 보인다. 하지만 이 하위 검색에서 얼마나 많은 수의 결과가 반환될지를 알 수 없다. 
+비록 top에서 limit=1로 결과를 1개로 제한하지만 1000개에서 1개를 추출하는건지 10000개에서 1개를 추출하는지 알 수 없기 때문이다.
+만일 하위 검색결과가10,000개라면 그 만큼 성능저하가 발생한다. 이를 위해 Splunk는 하위 검색의 결과 개수를 최대 10,000개로 검색을 반환하는 최대 시간을 60초로 제한하고 있다.
+하위 검색 결과 성능 저하를 피하기 위해서는 다음의 방식을 사용할 수 있다. 
+
+하위 검색이 처리해야 하는 이벤트의 수가 제한되도록 쿼리를 재작성한다.
+하위 검색 끝에 format 명령어를 추가한다. format 명령어가 검색에 대해 인라인으로 실행되는 결과의 수를 변경할 수 있다.
+...| format maxresults = <양의 정수>
+
+간략하게 하위 검색을 살펴보았다. 하위 검색은 두 가지 조건을 가지고 검색을 해야 할 때 유용한 기법이다. 시간에 따라 최대값, 최소값 등 가변적인 결과를 얻을 때 사용할 수 있다. 
