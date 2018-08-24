@@ -1,0 +1,94 @@
+Bro 설치를 마무리했으면 간단하게 사용해보자. 
+
+Bro는 서버에서 지속적으로 패킷을 수집하고 분석하는 형태인 데몬 형태의 구동과 1회성으로 실행하는 두 가지 방식이 있다.
+오늘은 1회성으로 분석하는 방식을 서술한다. 
+ 
+수동 분석을 수행할 때 Bro는 pcap 파일을 입력을 받는다. 실습을 위해서 시험용 pcap 파일을 다운로드 받아보자. 
+
+http://www.malware-traffic-analysis.net
+
+악성 트래픽과 악성코드를 예제로 제공하는 훌륭한 사이트이다. 다만 실제 악성코드가 포함된 pcap을 제공하므로 조심히 다뤄야 한다.
+이 사이트에서 내려받은 pcap 파일과 악성코드 파일은 반드시 통제된 환경인 가상환경 또는 Linux에서만 다뤄야 한다.
+
+Traffic Analysis Exercises
+  ->  for training exercises to analyze pcap files of network traffic 을 클릭한다.
+
+<bro 2-1>
+이 글을 쓰는 시점에서 가장 최신 글은 2018-08-12 -- Traffic analysis exercise - Sputnik House이다.
+링크를 클릭해서 상세 페이지로 이동한다. 이동한 페이지에서 Zip archive of the pcap 파일을 다운로드 한다.
+
+<bro 2-2>
+
+내려받은 파일의 압축을 해제한다. 이 사이트에서 내려받는 모든 파일은 압축파일에 암호가 걸려있다. 암호는 'infected'이다.
+암호는 대소문자를 구분한다. 압축을 해제하면 pcap 파일을 얻을 수 있다. 
+이제 bro를 이용해서 이 패킷을 분석해보자. 
+
+bro에서 pcap 파일을 읽어들이려면 -r 옵션을 사용해야 한다. 읽어들이고 패킷을 분석한 후에는 bro는 많은 log파일을 생성한다. 
+그러므로 하나의 pcap 파일과 로그 파일을 한 디레토리에서 관리하는 것이 편하다. 
+
+우리가 설치했던 bro는 /opt/bro/bin/에 위치해있다. 실행파일 경로에 명시되지 않았으므로 실행시키리면 전체 경로를 명시해야 한다.
+다음과 같이 명령어를 실행시킨다. 
+
+/opt/bro/bin/bro -r 2018-08-12-traffic-analysis-exercise.pcap
+
+패킷이 checksums 문제가 있다고 하면서 경고를 보여주는 경우도 있다. 이럴때는 checksum값을 무시하고 분석한다. 
+
+/opt/bro/bin/bro -C -r 2018-08-12-traffic-analysis-exercise.pcap
+
+리눅스이므로 모든 옵션은 대소문자를 구분한다는 점을 기억하자. 대부분의 사람들이 윈도우에 익숙하다보니 대소문자 구분을 이해하지 못하기도 한다.
+bro는 pcap 파일 한 개에서 많은 log 파일을 추출해준다. 이것은 bro가 시그니처 기반의 탐지가 아니라 네트워크 프로토콜 자체를 분석하기 때문이다.
+
+그림에서 파일명을 보면 [프로토콜_이름|응용프로그램_이름].log라는 규칙을 찾을 수 있다. 
+conn.log : connect라는 의미로 네트워크 접속과 연관된 이력을 보여준다.
+dce_rpc.log : Distributed Computing Environment / Remote Procedure Calls 관련 로그
+dhcp.log : DHCP 로그
+dns.log : DNS 로그
+files.log : 전송 파일 관련 로그
+http.log : HTTP 로그
+kerberos.log : Kerberos 인증 로그
+packet_filter.log : 현재 Bro에 적용된 패킷 필터 관련 로그
+pe.log : 윈도우 실행파일 로그
+smb_files.log : SMB 파일 로그
+smb_mapping.log : SMB 트리 로그
+ssl.log : SSL(Secure Socket Layer) 로그
+weird.log : 비정상 행위 로그
+x509.log : X509 인증서 관련 로그
+
+bro가 생성하는 로그에 대한 전체 정보는 다음 링크에서 얻을 수 있다. 
+
+https://www.bro.org/sphinx/script-reference/log-files.html
+
+Bro는 다음의 분야별로 로그를 생성한다. 
+Network Protocols : 네트워크 프로토콜을 분석하고 분류해서 해당 프로토콜 이름으로 파일을 생성한다. 
+Files : 네트워크 패킷에 전송되는 파일 정보를 추출해서 로그를 생성한다. 파일을 저장하지는 않는다. 
+NetControl : 네트워크 제어 관련한 로그를 생성한다.
+Detection : 탐지 관련한 정보를 로그로 생성한다.
+Network Observations : 네트워크에서 발생하는 이벤트를 관측하는 로그를 생성한다.
+Miscellaneous : 네트워크에서 발생하는 여러 이상징후 관련 로그를 생성한다.
+Bro Diagnostics : Bro 운영 관련 로그를 생성한다. 
+
+이처럼 다양한 로그를 생성하기 때문에 Bro 로그를 이해하려면 응용 프로토콜 관련 지식이 필수적이다.
+Bro에서 가장 많이 활용하는 로그인 conn.log를 살펴보자. 
+conn.log 파일을 편집기를 이용해서 열어보자. 
+
+#separator \x09
+#set_separator  ,
+#empty_field    (empty)
+#unset_field    -
+#path   conn
+#open   2018-08-23-09-50-45
+#fields ts      uid     id.orig_h       id.orig_p       id.resp_h       id.resp_p       proto   service duration        orig_bytes      resp_bytes      conn_state      local_orig      local_resp      missed_bytes    history orig_pkts       orig_ip_bytes   resp_pkts       resp_ip_bytes   tunnel_parents
+#types  time    string  addr    port    addr    port    enum    string  interval        count   count   string  bool    bool    count   string  count   count   count   count   set[string]
+
+#로 시작하는 줄들은 로그파일에 대한 설명을 보여준다. 
+
+#separator \x09 : 각 필드 구분자가 tab이라는 의미이다. 그렇기 때문에 탭을 구분자로 설정해서 로그를 간단하게 파싱할 수 있다.
+#set_separator  , : 필드에서 여러개의 값이 있는 경우 ,로 구분된다는 의미이다. 
+#empty_field    (empty) : 필드에 값이 없는 경우
+#unset_field    -   : 필드가 설정이 안된 경우, bro 로그는 스크립트에 의해서 설정된다. 필드값이 '-'이라면 스크립트에서 설정하지 않아 로그가 남지 않는 경우이다. 
+#path   conn    : 로그 파일 이름
+#open   2018-08-23-09-50-45 : 로그가 생성된 시간이다. 년-월-일-시-분-초로 저장된다. 현재 시스템이 사용중인 타임존 시간이다.
+#fields : 로그가 사용하는 필드명이다.
+#types : 필드들의 데이터 형식이다. 
+
+필드와 타입 내용은 방대한 양이라서 다음 글에서 살펴보기로 한다.
