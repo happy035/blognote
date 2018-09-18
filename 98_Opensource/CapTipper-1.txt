@@ -1,0 +1,157 @@
+CapTipper
+
+CapTipper란?
+CapTipper는  Python 기반의 HTTP 트래픽 분석도구로 악성 트래픽을 분석하는데 특화된 도구이다. 
+Wireshark와 같은 경우 대단히 강력한 도구이고 GUI를 이용해서 패킷을 분석할 수 있지만 패턴 찾기, 세션결합 등을 활용하기 위해서는 많은 훈련시간이 필요하다. 
+CapTipper는 악성 트래픽 분석에 도움을 줄 수 있는 직관적이고 핵심 기능으로 구성되어 있어 초보자라도 빠르게 분석을 수행할 수 있는 장점이 있다.
+CapTipper를 사용하는데 필요한 지식은 네트워크로 전송되는 악성트래픽의 진행 과정만을 이해하면 된다. 
+
+CapTipper 사용 이점
+
+- 초보자라도 악성 트래픽을 신속히 분석할 수 있다.
+- 악성 코드를 호스팅하는 악성도메인을 식별할 수 있다. 
+- 악성코드를 추출하지 않고도 해시값을 추출이 가능하다.
+- 실제 악성코드를 패킷에서 추출하여 덤프가 가능하다.
+
+CapTipper 설치
+CapTipper는 파이썬 스크립트로 구성되어 있으므로 설치가 필요없다. 내려받은 후 바로 실행시켜서 사용할 수 있다. 
+zip 파일로 내려받는 주소는 다음과 같다. 
+https://github.com/omriher/CapTipper/archive/master.zip
+
+다음과 같이 git을 이용해서 복제할 수도 있다. 
+
+git clone https://github.com/omriher/CapTipper
+
+사용법은 정말 간단하다. 다만 HTTP 프로토콜을 이해하고 있어야 설명서가 쉽게 이해된다. 공식 설명서는 다음 링크에서 읽을 수 있다.
+
+https://captipper.readthedocs.io/en/latest/
+
+
+CapTipper로 악성 트래픽 분석하기
+
+ - 실행하기
+
+ python CapTipper.py [트래픽 파일] -p <포트번호>
+
+트래픽 파일을 인자로 주고 포트번호를 명시한다. 포트번호는 가상 웹서버를 구동하는데 사용한다. -p 옵션은 사용하지 않아도 상관없다. 
+
+============
+CapTipper v0.3 b13 - Malicious HTTP traffic explorer tool
+Copyright 2015 Omri Herscovici <omriher@gmail.com>
+
+[A] Analyzing PCAP: ../pcap/mtraffic.pcap
+
+[+] Traffic Activity Time:  Thu, 11/06/14 15:02:35
+[+] Conversations Found:
+
+0:  /  -> text/html (0.html) [5.4 KB]  (Magic: GZ)
+1:  /wp-includes/js/jquery/jquery.js?ver=1.7.2  -> application/javascript (jquery.js) [38.6 KB]  (Magic: GZ)
+2:  /seedadmin17.html  -> text/html (seedadmin17.html) [354.0 B]  (Magic: HTML)
+3:  /wp-content/uploads/2014/01/MetroWest_COVER_Issue2_Feb2014.jpg  -> image/jpeg (MetroWest_COVER_Issue2_Feb2014.jpg) [341.8 KB]  (Magic: JPG)
+4:  /15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html  -> text/html (15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html) [110.5 KB]  (Magic: HTML)
+
+=================
+
+트래픽을 읽어들이면 세션별로 트래픽을 보여준다. 왼쪽의 숫자는 컨버세이션ID라고 한다. 이 ID를 기반으로 모든 분석이 이뤄진다. 
+이 내용을 다시 보고 싶으면 convs라는 명령어를 실행한다. 사실 패킷을 로딩하고 첫 번째 실행하는 명령어가 convs이다.
+
+CT> convs
+Conversations Found:
+=====
+0:  /  -> text/html (0.html) [5.4 KB]  (Magic: GZ)
+1:  /wp-includes/js/jquery/jquery.js?ver=1.7.2  -> application/javascript (jquery.js) [38.6 KB]  (Magic: GZ)
+2:  /seedadmin17.html  -> text/html (seedadmin17.html) [354.0 B]  (Magic: HTML)
+3:  /wp-content/uploads/2014/01/MetroWest_COVER_Issue2_Feb2014.jpg  -> image/jpeg (MetroWest_COVER_Issue2_Feb2014.jpg) [341.8 KB]  (Magic: JPG)
+4:  /15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html  -> text/html (15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html) [110.5 KB]  (Magic: HTML)
+5:  /images/footer/3000melbourne.png  -> image/png (3000melbourne.png) [2.9 KB]  (Magic: PNG)
+6:  /images/footer/3207portmelbourne.png  -> image/png (3207portmelbourne.png) [3.0 KB]  (Magic: PNG)
+
+======
+
+각 ID의 구성은 다음과 같다. 
+
+ID번호 : URI -> MIME (파일명) [크기] (파일 Magic)
+
+여기에서 주의깊게 봐야 할 것은 파일명, MIME과 파일 Magic이다. 파일명의 확장자를 보면 파일 속성을 추측할 수 있다. 
+하지만 파일명은 공격자가 얼마든지 바꿀 수 있으므로 MIME과 Magic에서 더 정확한 정보를 얻을 수 있다. 
+여기에서 의심가는 ID를 기반으로 분석을 계속 진행할 수 있다. 
+
+
+
+CT> info 1
+Info of conversation 1:
+===========
+
+ SERVER IP   : 182.160.157.199:80
+ TIME        : Thu, 11/06/14 15:02:37
+ HOST        : www.magmedia.com.au
+ URI         : /wp-includes/js/jquery/jquery.js?ver=1.7.2
+ REFERER     : http://www.magmedia.com.au/
+ METHOD      : GET
+ RESULT NUM  : 200 OK
+ RESULT TYPE : application/javascript
+ FILE NAME   : jquery.js
+ MAGIC       : GZIP archive file (GZ)
+ LENGTH      : 39562 B
+======
+
+info는 ID를 입력받아서 상세 정보를 보여준다. 이 정보만으로도 ID가 어떤 통신인지 바로 파악할 수 있다. 
+
+
+CT> head 1
+Displaying header of object 1 (jquery.js):
+=======
+HTTP/1.1 200 OK
+Content-Encoding: gzip
+Vary: Accept-Encoding
+Date: Thu, 06 Nov 2014 15:03:41 GMT
+Server: LiteSpeed
+Accept-Ranges: bytes
+Connection: Keep-Alive
+Keep-Alive: timeout=5, max=100
+Last-Modified: Mon, 10 Feb 2014 12:34:10 GMT
+Content-Type: application/javascript
+Content-Length: 39562
+Cache-Control: public, max-age=604800
+Expires: Thu, 13 Nov 2014 15:03:41 GMT
+=======
+
+head는 ID의 HTTP 헤더를 보여준다. 
+
+CT> hashes 11
+ Hashes of object 11 (5.exe):
+
+ md5       :   67291715c45c4594b8866e90fbf5c7c4
+ sha1      :   a86dcb1d04be68a9f2d2373ee55cbe15fd299452
+ sha224    :   6cc5585425cbb8b656ac4d12ce6331561df705787a0f8036b5f47eed
+ sha256    :   955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c
+ sha384    :   a207d38c964a0736adb86e74ea20ae5737afea9bfc87b7126ebb6d628432f6261dcef15cacf3b3bc14b072374dadf676
+ sha512    :   703a9a69239ffe3bddf44fecf09136cb1e9872708d8e3d2d39f9904a4cc075d9e63d6b421bea8f1affeef855f8d9c5b903a517779777febaa84521824b4a07e1
+
+hashes는 id에서 전송된 파일을 추출해서 다양한 해시값을 보여준다. 이전까지는 트래픽에서 파일을 먼저 추출하고 해시값을 구해야 했다. 
+하지만 CapTipper에서는 트래픽에서 파일 해시값을 바로 구할 수 있다. 이것은 상당히 편리한 기능이며 동시에 안전한 기능이다. 
+초보자라면 파일을 추출하고 다루는데 실수를 저지를 가능성도 높기 때문이다. 이렇게 추출한 해시값을 악성코드 정보 공유 사이트에서 검색하면 파일의 악성유무를 빠르게 확인할 수 있다. 
+
+
+CT> hosts
+Found Hosts:
+
+ www.magmedia.com.au (182.160.157.199:80)
+ ├-- /   [0]
+ ├-- /wp-includes/js/jquery/jquery.js?ver=1.7.2   [1]
+ ├-- /wp-content/uploads/2014/01/MetroWest_COVER_Issue2_Feb2014.jpg   [3]
+ ├-- /images/footer/3000melbourne.png   [5]
+ ├-- /images/footer/3207portmelbourne.png   [6]
+ └-- /wp-content/uploads/2012/09/background1.jpg   [7]
+
+hosts는 트래픽을 호스트로 묶어서 보여준다. 트리 구조 옆에 숫자는 트래픽 ID이다. 
+ID는 순서도 겸하고 있기 때문에 이 트리를 보면 사용자의 요청이 어느 사이트로 이동하는지도 파악할 수 있다. 
+
+
+
+CT> dump 11 /tmp/5.exe
+ Object 11 written to /tmp/5.exe
+
+패킷에서 해당 세션의 파일을 추출해서 디스크에 저장한다. ID와 저장할 경로와 파일명을 입력받는다.
+
+다음 번에는 캡쳐에서 보았던 패킷을 가지고 실제 분석하는 절차를 알아보도록 하자. 
