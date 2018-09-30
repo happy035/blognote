@@ -1,0 +1,289 @@
+예고한 대로 CapTipper를 이용해서 악성 트래픽을 분석해보자. 
+악성코드 자체를 분석하는 것이 아니고 악성 코드를 전송하는 트래픽이다. 
+
+Captipper 파일을 다운로드 받고 압축을 해제한다. 
+
+실습용 예제 파일은 http://www.malware-traffic-analysis.net/2014/11/06/index.html에서 구할 수 있다. 
+
+[[!!!주의!!!]]
+해당 트래픽은 실제 악성코드를 포함하고 있어 주의가 요구된다.  
+반드시 가상환경과 같이 통제된 상황에서 악성 트래픽을 분석해야 한다.
+실환경에서 분석하다가 실수하면 여러분의 컴퓨터를 손상시킬 수 있다. 
+분석 트래픽을 리눅스에서 분석한다면 이런 위험을 제거할 수 있다. 윈도우용 악성코드는 리눅스에서 동작하지 않기 때문이다.
+
+분석대상 파일을 CapTipper로 읽어들인다. 
+python ../CapTipper/CapTipper.py mtraffic.pcap -p 5000
+
+전체 현황을 보기 위해 convs 명령어로 확인을 한다. 
+
+CT> convs
+Conversations Found:
+
+0:  /  -> text/html (0.html) [5.4 KB]  (Magic: GZ)
+1:  /wp-includes/js/jquery/jquery.js?ver=1.7.2  -> application/javascript (jquery.js) [38.6 KB]  (Magic: GZ)
+2:  /seedadmin17.html  -> text/html (seedadmin17.html) [354.0 B]  (Magic: HTML)
+3:  /wp-content/uploads/2014/01/MetroWest_COVER_Issue2_Feb2014.jpg  -> image/jpeg (MetroWest_COVER_Issue2_Feb2014.jpg) [341.8 KB]  (Magic: JPG)
+4:  /15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html  -> text/html (15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html) [110.5 KB]  (Magic: HTML)
+5:  /images/footer/3000melbourne.png  -> image/png (3000melbourne.png) [2.9 KB]  (Magic: PNG)
+6:  /images/footer/3207portmelbourne.png  -> image/png (3207portmelbourne.png) [3.0 KB]  (Magic: PNG)
+7:  /wp-content/uploads/2012/09/background1.jpg  -> image/jpeg (background1.jpg) [32.3 KB]  (Magic: JPG)
+8:  /00015d76d9b2rr9f/1415286120  -> application/octet-stream (00015d76.swf) [30.8 KB]  (Magic: SWF)
+9:  /00015d766423rr9f/1415286120  -> application/pdf (XykpdWhZZ2.pdf) [9.7 KB]  (Magic: PDF)
+10:  /00015d76rr9f/1415286120/5/x00809070554515d565b010b03510053535c0505;1;6  -> application/octet-stream (5.exe) [136.0 KB]  (Magic: EXE)
+11:  /00015d76rr9f/1415286120/5/x00809070554515d565b010b03510053535c0505;1;6;1  -> application/octet-stream (5.exe) [136.0 KB]  (Magic: EXE)
+12:  /00015d76rr9f/1415286120/7  -> application/octet-stream (7.exe) [136.0 KB]  (Magic: EXE)
+13:  /00015d761709rr9f/1415286120  -> application/octet-stream (00015d76.swf) [7.9 KB]  (Magic: XAP)
+14:  /00015d76rr9f/1415286120/8  -> application/octet-stream (8.exe) [136.0 KB]  (Magic: EXE)
+
+CapTipper는 실습용 트래픽에서 총 14개의 세션을 추출했다. 설명서에는 세션이 아니라 컨버세이션(conversation)이란 용어를 사용한다. 
+하지만 여기에서는 세션이라는 용어를 사용하기로 하자. 
+
+맨 앞의 세션 번호는 트래픽의 접속 순서를 보여준다. CapTipper를 이용한 분석은 빠르게 분석하면서 공격 관련 지표를 추출하는 것이다.
+실제로 악성코드를 분석해서 백신 패턴 업데이트를 하지 않는 기업 보안 담당자라면 수상한 파일의 해시값, 파일이 다운로드 되는 도메인 정보가 가장 우선적으로 확보해야 할 정보이다. 
+그 이유는 파일의 악성 유무롤 판별하고 조회하기 위함이고, 악성으로 판명되면 그 도메인을 접속하지 못하도록 차단해야 하기 때문이다.
+
+우선 파일에서 악성 유무를 판별해보자. 악성 코드 분석가가 없다면 우리는 인터넷과 같은 집단 지성의 힘을 빌어야 한다. 바이러스 토탈, 하이브리드시큐리티와 같은 사이트에서 악성 파일을 검색할 수 있다. 
+https://www.virustotal.com
+https://www.hybrid-analysis.com/
+
+국내에도 이와 못지않게 훌륭한 사이트가 있다. 
+https://www.malwares.com/
+
+요즘의 악성코드는 공격 대상에 맞추는 목적형 악성코드가 대부분이다. 그러므로 지역색을 띤다고 볼 수 있다. 지역색의 의미는 특정지역에서 주로 발견된다는 의미이다. 
+우리나라에서만 발생하는 악성코드는 외국의 백신 소프트웨어가 탐지하지 못할 수도 있다. 바이러스토탈이 많은 정보를 제공하는 사이트이지만 반드시 국내 사이트와 교차점검을 수행하는 것이 좋다. 
+
+전체 14개의 세션에서 mime-type을 살펴보니 아래와 같은 현황을 파악할 수 있었다. 
+
+text/html  : [0] [2] [4]
+application/javascript : [1]
+image/jpeg : [3] [7]
+application/octet-stream : [8] [9] [10] [11] [12] [13]
+
+text/html은 html 파일을 전송한 것이다. html 파일에는 html 태그와 스크립트가 포함되어 있다. 최초 공격은 html 에서 시작한다.
+javacript는 브라우저에서 실행되는 스크립트이므로 파일을 다운로드 하거나 다른 사이트로 이동을 시키는 코드를 삽입할 수 있다. 
+jpeg는 그림 파일이므로 실제 악성행위에 사용되는 경우는 매우 드물다. 이 분석에서는 무시해도 상관없다. 
+octet-stream은 우리가 눈여겨 봐야할 가장 중요한 파일이다. 이 mime-type은 실행파일을 의미하는 경우가 대부분인 바이너리 파일을 의미한다. 
+이 mime-type을 가진 세션에서 파일명을 보면 .swf와 .exe이다. swf는 플래시 파일이며 플래시 플레이어가 읽어들이고 실행한다. 
+플래시에 공격코드를 삽입하고 플래시 플레이어의 취약점을 이용해서 공격할 수 있다.
+
+우선 공격을 수행할 수 있는 exe 파일 위주로 정보를 추출해보자. 
+
+exe 파일을 내려주는 세션은 [10] [11] [12] [14]이며 각각 5.exe, 5.exe, 7.exe와 8.exe를 파일명으로 가지고 있다. 
+각 파일들의 해시값을 추출해보자. hashes <세션ID>를 이용해서 추출한다. 파일명이 같은 10번과 11번은 동일 파일로 추정된다. 
+실제로 동일파일인지 확인해보자. 
+
+======
+CT> hashes 10
+ Hashes of object 10 (5.exe):
+
+ md5       :   67291715c45c4594b8866e90fbf5c7c4
+ sha1      :   a86dcb1d04be68a9f2d2373ee55cbe15fd299452
+ sha224    :   6cc5585425cbb8b656ac4d12ce6331561df705787a0f8036b5f47eed
+ sha256    :   955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c
+ sha384    :   a207d38c964a0736adb86e74ea20ae5737afea9bfc87b7126ebb6d628432f6261dcef15cacf3b3bc14b072374dadf676
+ sha512    :   703a9a69239ffe3bddf44fecf09136cb1e9872708d8e3d2d39f9904a4cc075d9e63d6b421bea8f1affeef855f8d9c5b903a517779777febaa84521824b4a07e1
+
+CT> hashes 11
+ Hashes of object 11 (5.exe):
+
+ md5       :   67291715c45c4594b8866e90fbf5c7c4
+ sha1      :   a86dcb1d04be68a9f2d2373ee55cbe15fd299452
+ sha224    :   6cc5585425cbb8b656ac4d12ce6331561df705787a0f8036b5f47eed
+ sha256    :   955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c
+ sha384    :   a207d38c964a0736adb86e74ea20ae5737afea9bfc87b7126ebb6d628432f6261dcef15cacf3b3bc14b072374dadf676
+ sha512    :   703a9a69239ffe3bddf44fecf09136cb1e9872708d8e3d2d39f9904a4cc075d9e63d6b421bea8f1affeef855f8d9c5b903a517779777febaa84521824b4a07e1
+
+=====================
+
+다른 세션이지만 해시값은 동일하다. 그러므로 두 파일은 동일한 내용을 가진 파일임을 알 수 있다. 다른 세션에서도 해시값을 추출해보자. 
+
+CT> hashes 12
+ Hashes of object 12 (7.exe):
+
+ md5       :   67291715c45c4594b8866e90fbf5c7c4
+ sha1      :   a86dcb1d04be68a9f2d2373ee55cbe15fd299452
+ sha224    :   6cc5585425cbb8b656ac4d12ce6331561df705787a0f8036b5f47eed
+ sha256    :   955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c
+ sha384    :   a207d38c964a0736adb86e74ea20ae5737afea9bfc87b7126ebb6d628432f6261dcef15cacf3b3bc14b072374dadf676
+ sha512    :   703a9a69239ffe3bddf44fecf09136cb1e9872708d8e3d2d39f9904a4cc075d9e63d6b421bea8f1affeef855f8d9c5b903a517779777febaa84521824b4a07e1
+
+CT> hashes 14
+ Hashes of object 14 (8.exe):
+
+ md5       :   67291715c45c4594b8866e90fbf5c7c4
+ sha1      :   a86dcb1d04be68a9f2d2373ee55cbe15fd299452
+ sha224    :   6cc5585425cbb8b656ac4d12ce6331561df705787a0f8036b5f47eed
+ sha256    :   955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c
+ sha384    :   a207d38c964a0736adb86e74ea20ae5737afea9bfc87b7126ebb6d628432f6261dcef15cacf3b3bc14b072374dadf676
+ sha512    :   703a9a69239ffe3bddf44fecf09136cb1e9872708d8e3d2d39f9904a4cc075d9e63d6b421bea8f1affeef855f8d9c5b903a517779777febaa84521824b4a07e1
+
+해쉬를 추출해보니 재미있는 사실이 나타났다. 4개 exe 파일이 모두 동일한 해시값을 가지고 있는 것으로 나타났기 때문이다. 
+이제 우리는 의심파일 단 1개만 분석하면 된다. SHA256 값을 복사해서 앞에서 말한 사이트들에서 검색해보자. 
+
+검색 결과는 아래 링크에서 확인할 수 있다. 
+
+https://www.malwares.com/report/file?hash=955E4E4A56BF80A30636B0C34673CDD6A889AFF6569331A5336E1606E7C1050C
+https://www.virustotal.com/#/file/955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c/detection
+
+두 링크가 제공하는 정보를 보면 이 파일은 악성파일이 명확해보인다. 물론 오래된 파일이라 탐지가 잘 되는 것도 있지만 실제로 최신파일도 조회결과가 잘 나타난다. 
+이제 두 파일이 악성이라는 명확한 증거를 수집했으니 실수라도 이 파일이 관리대상 내부 네트워크로 유입되는 것을 차단해야 안전한 네트워크를 운영할 수 있다.  
+여전히 많은 사용자들이 웹 사이트를 통해서 악성코드에 감염된다. 그러므로 사용자들이 이 사이트에 접속하는 것을 어떻게 차단해야 할 것인가? 
+우선 차단을 하려는 도메인을 추출해야 한다. 알아야 막을 수 있는거 아닐까?
+
+최초 악성코드가 내려오는 세션 번호는 10번이다. 그렇다면 10번 이전에 악성코드를 내려주는 어떠한 코드가 있다는 의미이다. 
+전체 세션의 도메인 사용현황을 추출하기 위해 hosts 명령어를 실행해보자. 
+
+CT> hosts
+Found Hosts:
+
+ www.magmedia.com.au (182.160.157.199:80)
+ ├-- /   [0]
+ ├-- /wp-includes/js/jquery/jquery.js?ver=1.7.2   [1]
+ ├-- /wp-content/uploads/2014/01/MetroWest_COVER_Issue2_Feb2014.jpg   [3]
+ ├-- /images/footer/3000melbourne.png   [5]
+ ├-- /images/footer/3207portmelbourne.png   [6]
+ └-- /wp-content/uploads/2012/09/background1.jpg   [7]
+
+ pixeltouchstudios.tk (108.61.196.84:80)
+ └-- /seedadmin17.html   [2]
+
+ grannityrektonaver.co.vu (173.244.195.17:80)
+ ├-- /15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html   [4]
+ ├-- /00015d76d9b2rr9f/1415286120   [8]
+ ├-- /00015d766423rr9f/1415286120   [9]
+ ├-- /00015d76rr9f/1415286120/5/x00809070554515d565b010b03510053535c0505;1;6   [10]
+ ├-- /00015d76rr9f/1415286120/5/x00809070554515d565b010b03510053535c0505;1;6;1   [11]
+ ├-- /00015d76rr9f/1415286120/7   [12]
+ ├-- /00015d761709rr9f/1415286120   [13]
+ └-- /00015d76rr9f/1415286120/8   [14]
+
+
+여러 도메인이 트리형태로 나타난다. 각 도메인 옆에 세션 번호가 명시되어 있다. 이 순서를 보면서 최초 접속에서 사용자의 접속이 어떻게 이뤄지는지 알 수 있다. 
+도메인을 접속하고 페이지를 읽어들이는 것이 순차적이지 않다는 것이 놀랍지 않다. 이렇게 웹은 연결된 사이트를 널뛰기 하듯이 왔다갔다 하는 것이다.
+[1]번 세션에서 [2]번 세션은 완전히 다른 도메인으로 이동하고 있다. 이것은 [1]번 세션인 js 파일에 [2]번 세션으로 이동하는 코드가 있다는 것을 의미한다. 
+
+[1]번 세션에 대한 정보를 추출해보자. 
+
+CT> info 1
+Info of conversation 1: 
+
+ SERVER IP   : 182.160.157.199:80
+ TIME        : Thu, 11/06/14 15:02:37
+ HOST        : www.magmedia.com.au
+ URI         : /wp-includes/js/jquery/jquery.js?ver=1.7.2
+ REFERER     : http://www.magmedia.com.au/
+ METHOD      : GET
+ RESULT NUM  : 200 OK
+ RESULT TYPE : application/javascript
+ FILE NAME   : jquery.js
+ MAGIC       : GZIP archive file (GZ)
+ LENGTH      : 39562 B
+
+Magic이 GZIP archive file (GZ)이므로 세션에 있는 jquery.js 파일은 압축형식으로 브라우저로 전송되었다. 이 상태에서는 직접 분석이 어렵다.
+다행히 CapTipper는 압축을 해제할 수 있는 명령어를 제공한다. 
+
+CT> ungzip 1
+ GZIP Decompression of object 1 (jquery.js) successful!
+ New object created: 15
+
+최초 세션은 총 14개 였음을 기억하라. 이제 압축을 해제한 세션을 임시로 15번으로 부여했다.  그럼 기존에 압축한 1번과 해제한 15번의 차이를 어떻게 알 수 있을까? 
+패킷의 헤더가 아닌 데이터 영역을 보는 명령어는 body이다. 
+
+CT> body 1
+Displaying body of object 1 (jquery.js) [256 bytes]:
+
+Ľi{#Ǒ��}~X�t�"HJ�g
+                      �o�%Y����m�CR�
+@a!�P؋	�o?��TJ���\g�j��\"#c���g��ry�~5O6���V�Ó��h|�*�ƫ�h�6_�ϗ��a��.i��Šݘl67����z�^��������F����h������zZ4��ݛ|��g���v^,6��=h���`�\o�����4�f�����h%�y{U���A�<n�_�?�=���_4/Z����?^���irq��i
+CT> body 15
+Displaying body of object 15 (ungzip-jquery.js) [256 bytes]:
+
+/*
+Copyright (C) 2007 Free Software Foundation, Inc. http://fsf.org/
+*/
+function getCookie(a){var b=document.cookie.match(new RegExp("(?:^|; )"+a.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g,"\\$1")+"=([^;]*)"));return b?decodeURIComponent(b[1]):undefined}(funct
+
+1번은 압축파일이라 내용을 볼 수 없지만 15번은 압축이 해제된 상태라 내용을 확인할 수 있다. 물론 전체 내용을 다 보여주지 않기 때문에 이것만으로는 악성행위를 찾을 수 없다. 
+웹 프로그래밍에서 다른 사이트로 이동시키는 가장 손쉬운 방법은 iframe 태그를 사용하는 것이다. 해당 세션에 iframe이 있는지 확인해보자. 
+압축을 해제한 15번을 대상으로 검사한다. 
+
+CT> iframes 15
+Searching for iframes in object 15 (ungzip-jquery.js)...
+ 1 iframe(s) Found!
+
+ [I] 1 : hxxp[:/]pixeltouchstudios[.]tk/seedadmin17.html
+
+안전을 위해서 링크 정보를 수정했다.
+iframe태그를 찾았으며 iframe이 이동할 사이트를 알려준다. 이 정보는 [2]번 세션과 동일하다는 것을 알 수 있다. 
+이제 [1]번에서 [2]번으로 점프한 원인을 찾았다. 하지만 아직 악성코드 다운로드 정보를 얻지는 못했다. 이제 [2]번을 다시 분석해보자. 
+
+CT> head 2
+Displaying header of object 2 (seedadmin17.html):
+
+HTTP/1.1 302 Found
+Server: nginx
+Date: Thu, 06 Nov 2014 15:02:38 GMT
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 354
+Connection: keep-alive
+Set-Cookie: ehihm=_YocADE3AAIAAgCvjVtU__.vjVtUQAABAAAAr41bVAA-; expires=Fri, 06-Nov-2015 15:03:11 GMT; path=/; domain=pixeltouchstudios.tk
+Location: hxxp[:]grannityrektonaver.co[.]vu/15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html
+
+[2]번 헤더를 살펴보니 302코드가 나타난다. 그리고 path가 나온다. 이 것은 다른 사이트 또는 페이지로 이동을 시키는 서버의 상태코드이다. 실제 내려오는 파일을 보자. 
+
+CT> body 2
+Displaying body of object 2 (seedadmin17.html) [256 bytes]:
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>302 Found</title>
+</head><body>
+<h1>Found</h1>
+<p>The document has moved <a href="hxxp[:/]grannityrektonaver.co[.]vu/15c0b14drr9f_1_08282d03fb0251bbd75ff6dc6e317bd9.html">here</a>.</p>
+
+사용자는 [1]번을  접속했다. 하지만 [1]번에 있는 iframe 태그로 인해 [2]번 세션으로 이동하고 [2]번에서 다시 [4]번으로 이동시키고 있다. 
+이 과정은 브라우저가 자동으로 실행하는 것이므로 사용자는 전혀 인지하지 못한다. 
+이제 실제 악성코드가 내려오는 사이트를 찾았다. 바로 [4]번 세션의 도메인이 악성코드를 호스팅하는 것이다. 
+물론 실제 악성파일을 내려주는 [10]번 세션을 보더라도 바로 이 도메인을 찾을 수 있다. 
+
+CT> info 10
+Info of conversation 10: 
+
+ SERVER IP   : 173.244.195.17:80
+ TIME        : Thu, 11/06/14 15:02:44
+ HOST        : grannityrektonaver.co.vu
+ URI         : /00015d76rr9f/1415286120/5/x00809070554515d565b010b03510053535c0505;1;6
+ REFERER     : 
+ METHOD      : GET
+ RESULT NUM  : 200 OK
+ RESULT TYPE : application/octet-stream
+ FILE NAME   : 5.exe
+ MAGIC       : Windows executable file (EXE)
+ LENGTH      : 139264 B
+
+[10]번 세션에서 우리는 HOST, Server IP를 모두 찾을 수 있다. 
+비록 최종적인 악성코드 호스킹 도메인은 [10]번 도메인이지만 앞서 연계된 [1]번과 [2]번에 연계된 도메인을 모두 차단해야 더욱 안전한 환경을 구축할 수 있다. 
+
+마지막으로 한 개의 명령어를 더 살펴보자. 
+상세 분석을 위해서 또는 백신회사에게 악성코드 샘플을 제공하기 위해서 등 실제 악성코드를 추출해야 하는 경우가 있다. dump를 사용해서 추출할 수 있다. 
+
+CT> dump 10 /tmp/5.exe
+ Object 10 written to /tmp/5.exe
+
+세션번호와 저장 경로를 지정하면 패킷에서 파일을 추출한다. 추출이 잘 되었는지 확인해보자. 파일을 덤프한 위치로 이동해서 다음 명령을 실행시킨다.
+
+shasum -a 256 5.exe 
+955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c  5.exe
+955e4e4a56bf80a30636b0c34673cdd6a889aff6569331a5336e1606e7c1050c  sha256
+
+비교를 위해서 약간 편집을 했지만 추출한 파일의 SHA256값과 패킷에서 hashes로 확인한 값이 동일한 결과를 보여준다. 
+파일의 덤프가 잘 되었다는 의미이다. !!! 이 파일은 악성 파일이므로 대단히 조심히 다뤄야 한다. !!! 
+
+CapTipper를 사용하는 방법은 이렇게 단순하다. 물론 이렇게 분석을 하기 위한 전제조건은 악성 트래픽이 있어야 한다는 것이다. 
+필요에 따라서 악성 트래픽 수집 환경을 구축할 필요가 있다. 
+
+그렇다면 이렇게 추출한 악성 도메인을 어떻게 차단할 것인가? [10]번 세션에서는 해당 서버의 IP가 존재한다. 그러므로 우선 L3방화벽에서 IP를 차단할 수 있다. 
+하지만 IP는 변경이 가능하다. 그리로 이런 IP를 언제까지 늘 차단할 것인가? 웹사이트 차단 솔루션을 보유하고 있다면 손쉽게 차단할 수 있다. 
+오픈소스인 Squidguard를 사용할 수 있고 다른 방법으로는 DNS sinkhole을 사용할 수도 있다. 
+
+다음에는 이렇게 추출한 악성 도메인을 손쉽게 차단할 수 있는 DNS sinkhole 구축을 알아보자. 
